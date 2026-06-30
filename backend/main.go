@@ -139,8 +139,8 @@ func main() {
 	log.Info("Worker pool stopped")
 
 	// Stop Telegram bot
-	bot, err := telegram.GetBot()
-	if err == nil && bot != nil && bot.IsRunning() {
+	bot, botErr := telegram.GetBot()
+	if botErr == nil && bot != nil && bot.IsRunning() {
 		if err := bot.Stop(ctx); err != nil {
 			log.Error("Error stopping Telegram bot", map[string]string{
 				"error": err.Error(),

@@ -172,13 +172,10 @@ func handlePaymentProcess(c *gin.Context) {
 			// Import telegram package at the top of the file
 			// Format itinerary details
 			itineraryDetails := "N/A"
-			if result.Itinerary != nil {
-				itineraryDetails = fmt.Sprintf("Passenger: %s\nRoute: %s\nFlight: %s",
-					result.Itinerary.PassengerName,
-					result.Itinerary.Route,
-					result.Itinerary.FlightNumber,
-				)
+			if result.Itinerary != nil && result.Itinerary.RecordLocator != "" {
+				itineraryDetails = fmt.Sprintf("Record Locator: %s", result.Itinerary.RecordLocator)
 			}
+			_ = itineraryDetails // TODO: Use this when telegram notification is fully implemented
 			
 			// Try to send notification (non-blocking)
 			// bot, err := telegram.GetBot()
