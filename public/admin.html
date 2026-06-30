@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' ws: wss:; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'">
+    <meta name="color-scheme" content="dark light">
+    <meta name="description" content="Admin Dashboard for CebuPacific Payment Processor">
+    <title>Admin Dashboard - CebuPacific</title>
+    <link rel="stylesheet" href="/frontend/assets/css/main.css">
+    <link rel="stylesheet" href="/frontend/assets/css/themes.css">
+    <link rel="stylesheet" href="/frontend/assets/css/components.css">
+    <link rel="stylesheet" href="/frontend/assets/css/admin.css">
+</head>
+<body>
+    <div class="admin-shell" id="admin-container">
+        <header class="admin-topbar">
+            <div class="brand-block">
+                <h1 class="brand-title">👨‍💼 Admin Dashboard</h1>
+                <p class="brand-subtitle">License & User Management</p>
+            </div>
+            <div class="topbar-actions">
+                <div id="theme-toggle"></div>
+                <button class="btn btn-secondary" id="logout-btn">Logout</button>
+            </div>
+        </header>
+
+        <div class="admin-layout">
+            <aside class="admin-sidebar">
+                <nav class="sidebar-nav">
+                    <a href="#overview" class="nav-item active" data-section="overview">
+                        <span class="nav-icon">📊</span>
+                        <span>Overview</span>
+                    </a>
+                    <a href="#users" class="nav-item" data-section="users">
+                        <span class="nav-icon">👥</span>
+                        <span>Users</span>
+                    </a>
+                    <a href="#licenses" class="nav-item" data-section="licenses">
+                        <span class="nav-icon">🔑</span>
+                        <span>Licenses</span>
+                    </a>
+                    <a href="#topups" class="nav-item" data-section="topups">
+                        <span class="nav-icon">💰</span>
+                        <span>Top-ups</span>
+                    </a>
+                    <a href="#settings" class="nav-item" data-section="settings">
+                        <span class="nav-icon">⚙️</span>
+                        <span>Settings</span>
+                    </a>
+                </nav>
+            </aside>
+
+            <main class="admin-content">
+                <div id="admin-main-mount"></div>
+            </main>
+        </div>
+    </div>
+
+    <div id="modal-root"></div>
+    <div id="toast-root" aria-live="polite" aria-atomic="true"></div>
+    <script type="module" src="/frontend/assets/js/admin.js"></script>
+</body>
+</html>
