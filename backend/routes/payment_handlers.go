@@ -162,7 +162,30 @@ func handlePaymentProcess(c *gin.Context) {
 				"credits_used":   fmt.Sprintf("%d", creditsUsed),
 				"credits_remain": fmt.Sprintf("%d", user.Credits),
 			})
+			
+			// Send real-time credit update
+			hub.BroadcastCreditUpdate(userID, user.Credits)
 		}
+		
+		// Send Telegram notification for successful transaction
+		go func() {
+			// Import telegram package at the top of the file
+			// Format itinerary details
+			itineraryDetails := "N/A"
+			if result.Itinerary != nil {
+				itineraryDetails = fmt.Sprintf("Passenger: %s\nRoute: %s\nFlight: %s",
+					result.Itinerary.PassengerName,
+					result.Itinerary.Route,
+					result.Itinerary.FlightNumber,
+				)
+			}
+			
+			// Try to send notification (non-blocking)
+			// bot, err := telegram.GetBot()
+			// if err == nil {
+			//     bot.SendTransactionNotification(context.Background(), transaction, itineraryDetails)
+			// }
+		}()
 	}
 
 	// Notify via WebSocket

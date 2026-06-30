@@ -45,6 +45,9 @@ const (
 	TypeProxyChange  MessageType = "proxy_change"
 	TypeRetry        MessageType = "retry"
 	TypeHeartbeat    MessageType = "heartbeat"
+	TypeKickedOut    MessageType = "kicked_out"
+	TypeCreditUpdate MessageType = "credit_update"
+	TypeProgressLog  MessageType = "progress_log"
 )
 
 type Message struct {
@@ -196,6 +199,31 @@ func (h *Hub) BroadcastStats(activeUsers, activeSessions int, memoryUsageMB, cpu
 func (h *Hub) BroadcastHeartbeat() {
 	h.BroadcastMessage(TypeHeartbeat, map[string]interface{}{
 		"timestamp": time.Now().Unix(),
+	})
+}
+
+// SendKickedOut sends a kick out message to a specific user
+func (h *Hub) SendKickedOut(userID string, reason string) {
+	h.SendToUser(userID, TypeKickedOut, map[string]interface{}{
+		"reason":  reason,
+		"message": "Your session has been terminated due to login from another device.",
+	})
+}
+
+// BroadcastCreditUpdate sends credit update to a user
+func (h *Hub) BroadcastCreditUpdate(userID string, credits int) {
+	h.SendToUser(userID, TypeCreditUpdate, map[string]interface{}{
+		"credits": credits,
+	})
+}
+
+// SendProgressLog sends a detailed progress log message
+func (h *Hub) SendProgressLog(userID string, step string, message string, level string) {
+	h.SendToUser(userID, TypeProgressLog, map[string]interface{}{
+		"step":    step,
+		"message": message,
+		"level":   level,
+		"time":    time.Now().Format("15:04:05"),
 	})
 }
 
