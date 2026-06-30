@@ -173,10 +173,9 @@ func handlePaymentProcess(c *gin.Context) {
 			// Format itinerary details
 			itineraryDetails := "N/A"
 			if result.Itinerary != nil {
-				itineraryDetails = fmt.Sprintf("Passenger: %s\nRoute: %s\nFlight: %s",
-					result.Itinerary.PassengerName,
-					result.Itinerary.Route,
-					result.Itinerary.FlightNumber,
+				itineraryDetails = fmt.Sprintf("Record Locator: %s\nRaw: %s",
+					result.Itinerary.RecordLocator,
+					result.Itinerary.Raw,
 				)
 			}
 			

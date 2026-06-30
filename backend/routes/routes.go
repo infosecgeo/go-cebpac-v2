@@ -450,17 +450,8 @@ func handleWebSocket(c *gin.Context) {
 // Placeholder handlers for license (to be implemented)
 func handleLicenseValidate(c *gin.Context)       { c.JSON(http.StatusOK, gin.H{"message": "Not implemented yet"}) }
 func handleLicenseStatus(c *gin.Context)         { c.JSON(http.StatusOK, gin.H{"message": "Not implemented yet"}) }
-func handleAdminGetLicenses(c *gin.Context)      { c.JSON(http.StatusOK, gin.H{"message": "Not implemented yet"}) }
-func handleAdminCreateLicense(c *gin.Context)    { c.JSON(http.StatusOK, gin.H{"message": "Not implemented yet"}) }
-func handleAdminUpdateLicense(c *gin.Context)    { c.JSON(http.StatusOK, gin.H{"message": "Not implemented yet"}) }
-func handleAdminRevokeLicense(c *gin.Context)    { c.JSON(http.StatusOK, gin.H{"message": "Not implemented yet"}) }
-func handleAdminGetProxies(c *gin.Context)       { c.JSON(http.StatusOK, gin.H{"message": "Not implemented yet"}) }
-func handleAdminAddProxy(c *gin.Context)         { c.JSON(http.StatusOK, gin.H{"message": "Not implemented yet"}) }
-func handleAdminDeleteProxy(c *gin.Context)      { c.JSON(http.StatusOK, gin.H{"message": "Not implemented yet"}) }
 func handleAdminGetConfig(c *gin.Context)        { c.JSON(http.StatusOK, gin.H{"message": "Not implemented yet"}) }
 func handleAdminUpdateConfig(c *gin.Context)     { c.JSON(http.StatusOK, gin.H{"message": "Not implemented yet"}) }
-func handleAdminGetSessions(c *gin.Context)      { c.JSON(http.StatusOK, gin.H{"message": "Not implemented yet"}) }
-func handleAdminTerminateSession(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"message": "Not implemented yet"}) }
 
 // Helper functions
 func generateUserID() string {
