@@ -24,10 +24,14 @@ const (
 	userAgent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
 	secChUa    = `"Google Chrome";v="137", "Chromium";v="137", "Not/A)Brand";v="24"`
 	acceptLang = "en-US,en;q=0.9"
-	apiKey     = "b260f3c7-23ea-422c-bcd4-a0b57a11f8a9"
 
-	soarURL  = "https://soar.cebupacificair.com"
-	proxyURL = "http://lbbhyx386857_custom_zone_PH:pwd927726@us.proxy001.com:7878"
+	soarURL = "https://soar.cebupacificair.com"
+)
+
+// Default values - these are overridden by admin settings from database when available
+const (
+	defaultAPIKey   = "b260f3c7-23ea-422c-bcd4-a0b57a11f8a9"
+	defaultProxyURL = ""
 )
 
 func getCookie(jar *cookiejar.Jar, name string) string {
@@ -41,7 +45,16 @@ func getCookie(jar *cookiejar.Jar, name string) string {
 }
 
 // runAkamaiChallenge runs steps 1–6 (SBSD + V3) and returns the ready client and jar.
-func runAkamaiChallenge() (tls_client.HttpClient, *cookiejar.Jar, error) {
+// apiKey and proxyURL should be retrieved from database settings or use defaults.
+func runAkamaiChallenge(apiKey, proxyURL string) (tls_client.HttpClient, *cookiejar.Jar, error) {
+	// Use defaults if not provided
+	if apiKey == "" {
+		apiKey = defaultAPIKey
+	}
+	if proxyURL == "" {
+		proxyURL = defaultProxyURL
+	}
+
 	jar, _ := cookiejar.New(nil)
 	options := []tls_client.HttpClientOption{
 		tls_client.WithTimeoutSeconds(30),
