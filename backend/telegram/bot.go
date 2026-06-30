@@ -15,7 +15,7 @@ tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 // Bot represents the Telegram bot instance
 type Bot struct {
 api          *tgbotapi.BotAPI
-db           *database.JSONDatabase
+db           *database.Database
 cfg          *config.Config
 logger       *logger.Logger
 updatesChan  tgbotapi.UpdatesChannel

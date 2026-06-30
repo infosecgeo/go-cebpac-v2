@@ -94,6 +94,11 @@ func (s *AkamaiService) AcquireClient(ctx context.Context) (*AkamaiClient, error
 			}
 			proxyID = record.ID
 			proxyURL = record.Address
+		} else {
+			// If no proxy manager, use database settings
+			if dbSettings, err := getDBSettings(ctx); err == nil && dbSettings.ProxyURL != "" {
+				proxyURL = dbSettings.ProxyURL
+			}
 		}
 		client, err := s.runChallenge(ctx, proxyURL)
 		if err != nil {

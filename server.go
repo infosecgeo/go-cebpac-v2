@@ -121,10 +121,10 @@ func payHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client, jar, err := runAkamaiChallenge()
+	client, jar, err := runAkamaiChallenge(defaultAPIKey, defaultProxyURL)
 	if err != nil {
 		log.Printf("Bot challenge attempt 1 failed: %v — retrying...", err)
-		client, jar, err = runAkamaiChallenge()
+		client, jar, err = runAkamaiChallenge(defaultAPIKey, defaultProxyURL)
 	}
 	if err != nil {
 		enc.Encode(payResp{false, "Bot challenge failed: " + err.Error()})
