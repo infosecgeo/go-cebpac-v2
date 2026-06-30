@@ -3,6 +3,7 @@ module cebupac
 go 1.26.1
 
 require (
+	github.com/Hyper-Solutions/hyper-sdk-go/v2 v2.9.2
 	github.com/bogdanfinn/fhttp v0.6.8
 	github.com/bogdanfinn/tls-client v1.15.1
 	github.com/gin-gonic/gin v1.10.0
@@ -12,7 +13,6 @@ require (
 )
 
 require (
-	github.com/Hyper-Solutions/hyper-sdk-go/v2 v2.9.2 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/bdandy/go-errors v1.2.2 // indirect
 	github.com/bdandy/go-socks4 v1.2.3 // indirect

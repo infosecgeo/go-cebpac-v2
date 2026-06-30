@@ -1,0 +1,48 @@
+:root,
+:root[data-theme="dark"] {
+    color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+    color-scheme: light;
+    --color-bg: #f4f8ff;
+    --color-surface: rgba(255, 255, 255, 0.9);
+    --color-surface-elevated: #ffffff;
+    --color-surface-soft: #edf3ff;
+    --color-border: rgba(38, 68, 124, 0.12);
+    --color-border-strong: rgba(38, 68, 124, 0.22);
+    --color-text: #12213a;
+    --color-text-muted: #4f6280;
+    --color-text-dim: #7386a0;
+    --color-primary: #2f6dff;
+    --color-primary-strong: #0f57ff;
+    --color-success: #198754;
+    --color-danger: #cf3347;
+    --color-warning: #d97706;
+    --color-info: #0ea5e9;
+    --color-overlay: rgba(17, 24, 39, 0.48);
+    --shadow-sm: 0 10px 28px rgba(11, 27, 57, 0.08);
+    --shadow-md: 0 18px 48px rgba(11, 27, 57, 0.12);
+    --progress-track: rgba(18, 33, 58, 0.08);
+    --color-skeleton: linear-gradient(90deg, rgba(18,33,58,0.05) 25%, rgba(18,33,58,0.1) 50%, rgba(18,33,58,0.05) 75%);
+}
+
+html,
+body,
+.shell-card,
+.card,
+.btn,
+.toast,
+.modal__dialog,
+.input,
+.textarea,
+.select,
+.progress,
+.result-item {
+    transition:
+        background-color var(--transition-base),
+        border-color var(--transition-base),
+        color var(--transition-base),
+        box-shadow var(--transition-base),
+        transform var(--transition-fast);
+}
