@@ -1,9 +1,10 @@
 package main
 
 import (
-	_ "embed"
+	"embed"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
 	"strconv"
@@ -11,19 +12,38 @@ import (
 	"time"
 )
 
-//go:embed index.html
-var indexHTML string
+//go:embed index.html frontend
+var embeddedFiles embed.FS
 
 func main() {
-	http.HandleFunc("/", indexHandler)
-	http.HandleFunc("/pay", payHandler)
+	frontendFS, err := fs.Sub(embeddedFiles, "frontend")
+	if err != nil {
+		log.Fatalf("failed to initialize frontend filesystem: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", indexHandler)
+	mux.HandleFunc("/pay", payHandler)
+	mux.Handle("/frontend/", http.StripPrefix("/frontend/", http.FileServer(http.FS(frontendFS))))
+
 	log.Println("Server listening on :5000")
-	log.Fatal(http.ListenAndServe(":5000", nil))
+	log.Fatal(http.ListenAndServe(":5000", mux))
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+
+	indexHTML, err := embeddedFiles.ReadFile("index.html")
+	if err != nil {
+		http.Error(w, "failed to load frontend", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprint(w, indexHTML)
+	fmt.Fprint(w, string(indexHTML))
 }
 
 type payResp struct {
@@ -48,7 +68,6 @@ func payHandler(w http.ResponseWriter, r *http.Request) {
 	bearerToken := r.FormValue("bearerToken")
 	hppContent := r.FormValue("hpp")
 
-	// ── Card validation ─────────────────────────────────────────────────────
 	parts := strings.Split(card, "|")
 	if len(parts) < 3 || len(parts) > 4 {
 		enc.Encode(payResp{false, "Invalid card format. Use: number|month|year or number|month|year|cvv"})
@@ -102,7 +121,6 @@ func payHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ── Run Akamai bot challenge (retry once on failure) ────────────────────
 	client, jar, err := runAkamaiChallenge()
 	if err != nil {
 		log.Printf("Bot challenge attempt 1 failed: %v — retrying...", err)
@@ -113,7 +131,6 @@ func payHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ── Full payment flow ────────────────────────────────────────────────────
 	ok, msg, err := processManualPayment(client, jar, xAuthToken, bearerToken, hppContent, cardNumber, month, year)
 	if err != nil {
 		enc.Encode(payResp{false, "Payment error: " + err.Error()})

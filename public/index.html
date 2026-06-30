@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' ws: wss:; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'">
+    <meta name="color-scheme" content="dark light">
+    <meta name="description" content="CebuPacific payment processor dashboard and execution console.">
+    <title>CebuPacific Payment Processor</title>
+    <link rel="stylesheet" href="/frontend/assets/css/main.css">
+    <link rel="stylesheet" href="/frontend/assets/css/themes.css">
+    <link rel="stylesheet" href="/frontend/assets/css/components.css">
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <div class="app-shell">
+        <header class="topbar shell-card">
+            <div class="brand-block">
+                <span class="brand-badge">Production console</span>
+                <div>
+                    <h1 class="brand-title">CebuPacific Payment Processor</h1>
+                    <p class="brand-subtitle">Secure payment orchestration with live operational visibility.</p>
+                </div>
+            </div>
+            <div class="topbar-actions">
+                <div class="connection-pill" id="connection-pill" aria-live="polite">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    <span id="connection-label">Connecting</span>
+                </div>
+                <div id="theme-toggle"></div>
+            </div>
+        </header>
+
+        <main id="main-content" class="layout-stack">
+            <section id="dashboard-mount" aria-label="Operational dashboard"></section>
+            <section class="layout-grid" aria-label="Payment controls and live progress">
+                <div class="layout-stack">
+                    <div id="payment-form-mount"></div>
+                    <div id="progress-tracker-mount"></div>
+                </div>
+                <div id="results-list-mount"></div>
+            </section>
+        </main>
+    </div>
+
+    <div id="modal-root"></div>
+    <div id="toast-root" aria-live="polite" aria-atomic="true"></div>
+    <noscript>
+        <div class="noscript-banner">JavaScript is required to use the CebuPacific payment processor dashboard.</div>
+    </noscript>
+    <script type="module" src="/frontend/assets/js/main.js"></script>
+</body>
+</html>
