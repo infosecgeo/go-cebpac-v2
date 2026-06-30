@@ -8,6 +8,7 @@ import (
 	"cebupac/backend/middleware"
 	"cebupac/backend/websocket"
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"net/http"
 	"time"
@@ -407,11 +408,10 @@ func randomString(n int) string {
 	for i := range b {
 		idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
 		if err != nil {
-			// Fallback to less secure method if crypto fails
-			b[i] = letters[i%len(letters)]
-		} else {
-			b[i] = letters[idx.Int64()]
+			// Return error instead of insecure fallback
+			panic(fmt.Sprintf("Failed to generate random string: %v", err))
 		}
+		b[i] = letters[idx.Int64()]
 	}
 	return string(b)
 }

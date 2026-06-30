@@ -147,13 +147,22 @@ func handlePaymentProcess(c *gin.Context) {
 	creditsUsed := 0
 	if result.Success {
 		creditsUsed = 1
-		user.Credits -= creditsUsed
-		db.UpdateUser(user)
-		logger.GetLogger().Info("Credits deducted", map[string]string{
-			"user_id":        userID,
-			"credits_used":   fmt.Sprintf("%d", creditsUsed),
-			"credits_remain": fmt.Sprintf("%d", user.Credits),
-		})
+		// Double-check credits (prevents race condition)
+		if user.Credits < creditsUsed {
+			logger.GetLogger().Warn("Insufficient credits after payment", map[string]string{
+				"user_id":      userID,
+				"credits":      fmt.Sprintf("%d", user.Credits),
+				"required":     fmt.Sprintf("%d", creditsUsed),
+			})
+		} else {
+			user.Credits -= creditsUsed
+			db.UpdateUser(user)
+			logger.GetLogger().Info("Credits deducted", map[string]string{
+				"user_id":        userID,
+				"credits_used":   fmt.Sprintf("%d", creditsUsed),
+				"credits_remain": fmt.Sprintf("%d", user.Credits),
+			})
+		}
 	}
 
 	// Notify via WebSocket
