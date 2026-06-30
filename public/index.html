@@ -13,7 +13,7 @@
 </head>
 <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
-    <div class="app-shell">
+    <div class="app-shell" id="app-container">
         <header class="topbar shell-card">
             <div class="brand-block">
                 <span class="brand-badge">Production console</span>
@@ -31,12 +31,15 @@
             </div>
         </header>
 
+        <div id="credit-banner-mount"></div>
+
         <main id="main-content" class="layout-stack">
             <section id="dashboard-mount" aria-label="Operational dashboard"></section>
             <section class="layout-grid" aria-label="Payment controls and live progress">
                 <div class="layout-stack">
                     <div id="payment-form-mount"></div>
                     <div id="progress-tracker-mount"></div>
+                    <div id="progress-logger-mount"></div>
                 </div>
                 <div id="results-list-mount"></div>
             </section>

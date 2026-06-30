@@ -25,6 +25,8 @@ const (
 	LogsCollection         = "logs"
 	SessionsCollection     = "sessions"
 	ProxiesCollection      = "proxies"
+	TopupRequestsCollection = "topup_requests"
+	AdminSettingsCollection = "admin_settings"
 )
 
 var (
@@ -41,6 +43,8 @@ var supportedCollections = map[string]string{
 	LogsCollection:         "logs.json",
 	SessionsCollection:     "sessions.json",
 	ProxiesCollection:      "proxies.json",
+	TopupRequestsCollection: "topup_requests.json",
+	AdminSettingsCollection: "admin_settings.json",
 }
 
 // JSONDatabase manages JSON-backed collections with locking, backups, and recovery.
@@ -154,6 +158,16 @@ func (db *JSONDatabase) Logs() (*Repository[AuditLog], error) {
 // Proxies returns the typed proxies repository.
 func (db *JSONDatabase) Proxies() (*Repository[ProxyRecord], error) {
 	return NewRepository(db, ProxiesCollection, func(proxy ProxyRecord) string { return proxy.ID })
+}
+
+// TopupRequests returns the typed topup requests repository.
+func (db *JSONDatabase) TopupRequests() (*Repository[TopupRequest], error) {
+	return NewRepository(db, TopupRequestsCollection, func(topup TopupRequest) string { return topup.ID })
+}
+
+// AdminSettings returns the typed admin settings repository.
+func (db *JSONDatabase) AdminSettings() (*Repository[AdminSettings], error) {
+	return NewRepository(db, AdminSettingsCollection, func(settings AdminSettings) string { return settings.ID })
 }
 
 // List loads every record from the repository.

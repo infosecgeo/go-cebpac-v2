@@ -13,6 +13,7 @@ import (
 	"cebupac/backend/database"
 	"cebupac/backend/logger"
 	"cebupac/backend/routes"
+	"cebupac/backend/telegram"
 	"cebupac/backend/websocket"
 	"cebupac/backend/workers"
 )
@@ -54,6 +55,20 @@ func main() {
 	log.Info("Worker pool started", map[string]string{
 		"pool_size": fmt.Sprintf("%d", cfg.Workers.PoolSize),
 	})
+
+	// Initialize Telegram bot (optional - will warn if not configured)
+	bot, err := telegram.GetBot()
+	if err == nil && bot != nil {
+		if err := bot.Start(); err != nil {
+			log.Warn("Failed to start Telegram bot", map[string]string{
+				"error": err.Error(),
+			})
+		} else {
+			log.Info("Telegram bot started")
+		}
+	} else {
+		log.Info("Telegram bot not configured, skipping initialization")
+	}
 
 	// Setup router
 	router := routes.SetupRouter()
@@ -122,6 +137,17 @@ func main() {
 		})
 	}
 	log.Info("Worker pool stopped")
+
+	// Stop Telegram bot
+	bot, err := telegram.GetBot()
+	if err == nil && bot != nil && bot.IsRunning() {
+		if err := bot.Stop(ctx); err != nil {
+			log.Error("Error stopping Telegram bot", map[string]string{
+				"error": err.Error(),
+			})
+		}
+		log.Info("Telegram bot stopped")
+	}
 
 	// Close database connections
 	if err := db.Close(); err != nil {

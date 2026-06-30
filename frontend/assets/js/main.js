@@ -8,7 +8,11 @@ import { ResultsList } from './components/resultsList.js';
 import { ThemeToggle } from './components/themeToggle.js';
 import { ToastManager } from './components/toast.js';
 import { ModalManager } from './components/modal.js';
+import { LoginForm } from './components/loginForm.js';
+import { CreditBanner } from './components/creditBanner.js';
+import { ProgressLogger } from './components/progressLogger.js';
 import adminService from './services/adminService.js';
+import authService from './services/authService.js';
 
 function getWebSocketUrl() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -33,7 +37,7 @@ function updateConnectionPill(socketState) {
     label.textContent = labels[socketState.status] || 'Telemetry offline';
 }
 
-function bindWebSocketTelemetry(socketClient, toast) {
+function bindWebSocketTelemetry(socketClient, toast, progressLogger, creditBanner) {
     socketClient.addEventListener('statuschange', (event) => updateConnectionPill(event.detail));
     socketClient.addEventListener('progress', (event) => {
         const data = event.detail.data || {};
@@ -70,6 +74,50 @@ function bindWebSocketTelemetry(socketClient, toast) {
         const message = event.detail.data?.message || 'A background task reported an error.';
         toast.show({ title: 'Task error', message, type: 'error' });
     });
+    
+    // New event handlers for license-based system
+    socketClient.addEventListener('kicked_out', (event) => {
+        const message = event.detail.data?.message || 'Your session has been terminated because you logged in from another device.';
+        toast.show({ title: 'Session Terminated', message, type: 'error', duration: 0 });
+        setTimeout(() => {
+            authService.logout();
+            window.location.reload();
+        }, 2000);
+    });
+    
+    socketClient.addEventListener('credit_update', (event) => {
+        const data = event.detail.data || {};
+        const currentUser = state.getState().user.profile;
+        if (currentUser) {
+            state.setState({
+                user: {
+                    profile: {
+                        ...currentUser,
+                        credits: Number(data.new_credits ?? currentUser.credits),
+                    },
+                },
+            }, 'socket:credit_update');
+            
+            // Update UI restrictions based on credits
+            if (creditBanner) {
+                if (data.new_credits === 0) {
+                    creditBanner.disablePaymentUI();
+                } else {
+                    creditBanner.enablePaymentUI();
+                }
+            }
+        }
+    });
+    
+    socketClient.addEventListener('progress_log', (event) => {
+        const data = event.detail.data || {};
+        if (progressLogger) {
+            progressLogger.addLog(data.message || 'Processing...', data.type || 'info');
+            if (data.percentage !== undefined) {
+                progressLogger.updateProgress(data.percentage, data.step);
+            }
+        }
+    });
 }
 
 async function bootstrap() {
@@ -95,6 +143,32 @@ async function bootstrap() {
         },
     }, 'app:hydrate');
 
+    // Check if user is authenticated
+    if (!authService.isAuthenticated()) {
+        // Show login form instead of main app
+        const appContainer = document.getElementById('app-container');
+        if (appContainer) {
+            appContainer.innerHTML = '<div id="login-form-mount"></div>';
+            const loginForm = new LoginForm({ toast, modal });
+            loginForm.mount(document.getElementById('login-form-mount'));
+        }
+        return;
+    }
+
+    // Initialize credit banner
+    const creditBanner = new CreditBanner({ toast });
+    const creditBannerMount = document.getElementById('credit-banner-mount');
+    if (creditBannerMount) {
+        creditBanner.mount(creditBannerMount);
+    }
+
+    // Initialize progress logger
+    const progressLogger = new ProgressLogger();
+    const progressLoggerMount = document.getElementById('progress-logger-mount');
+    if (progressLoggerMount) {
+        progressLogger.mount(progressLoggerMount);
+    }
+
     const dashboard = new Dashboard();
     dashboard.mount(document.getElementById('dashboard-mount'));
 
@@ -114,8 +188,14 @@ async function bootstrap() {
         url: getWebSocketUrl(),
         reconnect: storage.getUserPreferences().reconnectWebSocket !== false,
     });
-    bindWebSocketTelemetry(socketClient, toast);
+    bindWebSocketTelemetry(socketClient, toast, progressLogger, creditBanner);
     socketClient.connect();
+
+    // Check initial credit state and disable UI if needed
+    const userProfile = state.getState().user.profile;
+    if (userProfile && userProfile.credits === 0) {
+        creditBanner.disablePaymentUI();
+    }
 
     try {
         await adminService.loadDashboardData();

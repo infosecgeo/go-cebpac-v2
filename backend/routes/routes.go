@@ -1,6 +1,12 @@
 package routes
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	"cebupac/backend/auth"
 	"cebupac/backend/config"
 	"cebupac/backend/database"
@@ -8,10 +14,7 @@ import (
 	"cebupac/backend/middleware"
 	"cebupac/backend/websocket"
 	"crypto/rand"
-	"fmt"
 	"math/big"
-	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -53,6 +56,7 @@ func SetupRouter() *gin.Engine {
 		public.POST("/auth/login", handleLogin)
 		public.POST("/auth/register", handleRegister)
 		public.POST("/auth/refresh", handleRefreshToken)
+		public.POST("/auth/admin/login", handleAdminLogin)
 	}
 
 	// Protected routes
@@ -85,6 +89,11 @@ func SetupRouter() *gin.Engine {
 	admin.Use(middleware.AuthMiddleware())
 	admin.Use(middleware.RoleMiddleware("admin"))
 	{
+		// Settings management
+		admin.GET("/settings", handleAdminGetSettings)
+		admin.PUT("/settings", handleAdminUpdateSettings)
+		admin.POST("/settings/qr", handleAdminUploadQR)
+		
 		// User management
 		admin.GET("/users", handleAdminGetUsers)
 		admin.GET("/users/:id", handleAdminGetUser)
@@ -103,9 +112,8 @@ func SetupRouter() *gin.Engine {
 		admin.POST("/proxies", handleAdminAddProxy)
 		admin.DELETE("/proxies/:id", handleAdminDeleteProxy)
 		
-		// Configuration
-		admin.GET("/config", handleAdminGetConfig)
-		admin.PUT("/config", handleAdminUpdateConfig)
+		// Topup management
+		admin.GET("/topups", handleAdminGetTopups)
 		
 		// System stats
 		admin.GET("/stats", handleAdminGetStats)
@@ -119,9 +127,8 @@ func SetupRouter() *gin.Engine {
 // Auth handlers
 func handleLogin(c *gin.Context) {
 	var req struct {
-		Username string `json:"username" binding:"required"`
-		Password string `json:"password" binding:"required"`
-		DeviceID string `json:"device_id"`
+		LicenseKey string `json:"license_key" binding:"required"`
+		DeviceID   string `json:"device_id"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -130,36 +137,61 @@ func handleLogin(c *gin.Context) {
 	}
 
 	db := database.GetDatabase()
+	ctx := context.TODO()
 	
-	// Get user
-	user, err := db.GetUserByUsername(req.Username)
+	// Get user by license key
+	usersRepo, err := db.Users()
 	if err != nil {
-		logger.LogAuth("login", req.Username, "failed_user_not_found")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
 	}
 
-	// Verify password
-	if err := auth.VerifyPassword(req.Password, user.PasswordHash); err != nil {
-		logger.LogAuth("login", req.Username, "failed_wrong_password")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+	user, found, err := usersRepo.FindOne(ctx, func(u database.User) bool {
+		return u.LicenseKey == req.LicenseKey
+	})
+	
+	if err != nil || !found {
+		logger.LogAuth("login", req.LicenseKey, "failed_license_not_found")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid license key"})
 		return
 	}
 
 	// Check status
 	if user.Status != "active" {
-		logger.LogAuth("login", req.Username, "failed_inactive")
+		logger.LogAuth("login", req.LicenseKey, "failed_inactive")
 		c.JSON(http.StatusForbidden, gin.H{"error": "Account is not active"})
 		return
 	}
 
-	// Terminate previous session if exists
-	if user.SessionID != "" {
-		db.DeleteSession(user.SessionID)
-		websocket.GetHub().SendToUser(user.ID, websocket.TypeUserUpdate, map[string]interface{}{
-			"action":  "session_terminated",
-			"message": "New login detected. Your session has been terminated.",
+	// Check if terms accepted
+	if !user.TermsAccepted {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Terms and conditions not accepted",
+			"requires_terms": true,
 		})
+		return
+	}
+
+	// Check session conflict - terminate previous session if exists
+	if user.SessionID != "" {
+		sessionsRepo, _ := db.Sessions()
+		oldSession, found, _ := sessionsRepo.Get(ctx, user.SessionID)
+		if found && oldSession.Status == database.SessionStatusActive {
+			// Check if processing
+			if oldSession.ProcessingStatus == database.ProcessingStatusActive {
+				// Send immediate halt signal
+				websocket.GetHub().SendToUser(user.ID, websocket.TypeTaskError, map[string]interface{}{
+					"action":  "halt",
+					"message": "Processing halted due to new login from another device.",
+				})
+			}
+			
+			// Send kicked out message
+			websocket.GetHub().SendKickedOut(user.ID, "New login detected from another device")
+			
+			// Delete old session
+			sessionsRepo.Delete(ctx, user.SessionID)
+		}
 	}
 
 	// Generate tokens
@@ -177,46 +209,52 @@ func handleLogin(c *gin.Context) {
 		return
 	}
 
-	// Create session
-	session := &database.Session{
-		ID:           generateSessionID(),
-		UserID:       user.ID,
-		Token:        token,
-		DeviceID:     req.DeviceID,
-		IPAddress:    c.ClientIP(),
-		CreatedAt:    time.Now(),
-		ExpiresAt:    time.Now().Add(24 * time.Hour),
-		LastActivity: time.Now(),
+	// Create new session
+	sessionsRepo, _ := db.Sessions()
+	session := database.Session{
+		ID:               generateSessionID(),
+		UserID:           user.ID,
+		Token:            token,
+		DeviceID:         req.DeviceID,
+		IPAddress:        c.ClientIP(),
+		Status:           database.SessionStatusActive,
+		CreatedAt:        time.Now(),
+		ExpiresAt:        time.Now().Add(24 * time.Hour),
+		LastActivity:     time.Now(),
+		LastHeartbeat:    time.Now(),
+		ProcessingStatus: database.ProcessingStatusIdle,
+		ActiveDeviceID:   req.DeviceID,
 	}
-	db.CreateSession(session)
+	sessionsRepo.Create(ctx, session)
 
 	// Update user
 	user.SessionID = session.ID
 	user.LastLogin = time.Now()
 	user.LastIP = c.ClientIP()
 	user.DeviceID = req.DeviceID
-	db.UpdateUser(user)
+	usersRepo.Upsert(ctx, user)
 
-	logger.LogAuth("login", req.Username, "success")
+	logger.LogAuth("login", req.LicenseKey, "success")
 
 	c.JSON(http.StatusOK, gin.H{
 		"token":         token,
 		"refresh_token": refreshToken,
 		"user": gin.H{
-			"id":       user.ID,
-			"username": user.Username,
-			"role":     user.Role,
-			"credits":  user.Credits,
+			"id":                user.ID,
+			"username":          user.Username,
+			"role":              user.Role,
+			"credits":           user.Credits,
+			"telegram_linked":   user.TelegramID != 0,
+			"telegram_username": user.TelegramUsername,
 		},
 	})
 }
 
 func handleRegister(c *gin.Context) {
 	var req struct {
-		Username   string `json:"username" binding:"required"`
-		Password   string `json:"password" binding:"required"`
-		LicenseKey string `json:"license_key" binding:"required"`
-		DeviceID   string `json:"device_id"`
+		LicenseKey    string `json:"license_key" binding:"required"`
+		TermsAccepted bool   `json:"terms_accepted" binding:"required"`
+		DeviceID      string `json:"device_id"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -224,50 +262,81 @@ func handleRegister(c *gin.Context) {
 		return
 	}
 
+	if !req.TermsAccepted {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "You must accept the terms and conditions"})
+		return
+	}
+
 	db := database.GetDatabase()
+	ctx := context.TODO()
 
-	// Check if username exists
-	if _, err := db.GetUserByUsername(req.Username); err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
-		return
-	}
-
-	// Validate password
-	if err := auth.ValidatePassword(req.Password); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Hash password
-	hash, err := auth.HashPassword(req.Password)
+	// Validate license exists and is available
+	licensesRepo, err := db.Licenses()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process password"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	license, found, err := licensesRepo.FindOne(ctx, func(l database.License) bool {
+		return l.Key == req.LicenseKey
+	})
+
+	if err != nil || !found {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid license key"})
+		return
+	}
+
+	// Check if license is already used
+	if license.UserID != "" {
+		c.JSON(http.StatusConflict, gin.H{"error": "License key already in use"})
+		return
+	}
+
+	// Check if license is expired or revoked
+	if license.Status != database.LicenseStatusActive {
+		c.JSON(http.StatusForbidden, gin.H{"error": "License is not active"})
+		return
+	}
+
+	// Check if license already linked to a Telegram account (enforce 1 license per TG account)
+	if license.LinkedTelegramID != 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "License already linked to a Telegram account"})
 		return
 	}
 
 	// Create user
-	user := &database.User{
-		ID:           generateUserID(),
-		Username:     req.Username,
-		PasswordHash: hash,
-		LicenseKey:   req.LicenseKey,
-		Credits:      0,
-		Role:         "user",
-		Status:       "active",
-		CreatedAt:    time.Now(),
-		DeviceID:     req.DeviceID,
+	usersRepo, _ := db.Users()
+	user := database.User{
+		ID:                 generateUserID(),
+		Username:           "user_" + req.LicenseKey[:8], // Temp username
+		PasswordHash:       "", // No password for license-based auth
+		LicenseKey:         req.LicenseKey,
+		Credits:            0, // Starts with 0, requires topup
+		Role:               database.UserRoleUser,
+		Status:             database.UserStatusPending, // Pending until first topup approved
+		RegistrationStatus: database.RegistrationStatusPending,
+		CreatedAt:          time.Now(),
+		DeviceID:           req.DeviceID,
+		TermsAccepted:      true,
 	}
 
-	if err := db.CreateUser(user); err != nil {
+	if err := usersRepo.Create(ctx, user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 		return
 	}
 
-	logger.LogAuth("register", req.Username, "success")
+	// Update license with user ID
+	license.UserID = user.ID
+	licensesRepo.Upsert(ctx, license)
+
+	logger.LogAuth("register", req.LicenseKey, "success_pending_topup")
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "User created successfully",
+		"message": "Registration successful! Please link your Telegram account and top up at least 1 credit to activate your account.",
 		"user_id": user.ID,
+		"status":  "pending",
+		"requires_topup": true,
+		"telegram_bot": "Search for @YourBotName on Telegram and use /link " + req.LicenseKey,
 	})
 }
 
