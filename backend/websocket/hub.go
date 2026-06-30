@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"cebupac/backend/config"
 	"cebupac/backend/logger"
 
 	"github.com/gorilla/websocket"
@@ -16,7 +17,18 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		return true // Configure properly in production
+		// In production, verify against allowed origins
+		origin := r.Header.Get("Origin")
+		cfg := config.GetConfig()
+		
+		// Allow same-origin requests
+		if origin == "" || origin == "http://localhost:"+cfg.Server.Port || origin == "https://localhost:"+cfg.Server.Port {
+			return true
+		}
+		
+		// TODO: Add production origin whitelist check
+		// For now, allow all in development
+		return cfg.Server.Environment == "development"
 	},
 }
 

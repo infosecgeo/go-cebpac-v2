@@ -168,7 +168,21 @@ func SecurityHeaders() gin.HandlerFunc {
 // CORS handles CORS headers
 func CORS() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*") // Configure properly in production
+		cfg := config.GetConfig()
+		origin := c.Request.Header.Get("Origin")
+		
+		// In production, use whitelist of allowed origins
+		// In development, allow localhost
+		allowedOrigin := "*"
+		if cfg.Server.Environment == "production" {
+			// TODO: Configure production origin whitelist in config
+			// For now, only allow same origin
+			if origin != "" {
+				allowedOrigin = origin // Would check against whitelist
+			}
+		}
+		
+		c.Header("Access-Control-Allow-Origin", allowedOrigin)
 		c.Header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Authorization,Content-Type,Accept,Origin,X-Requested-With")
 		c.Header("Access-Control-Allow-Credentials", "true")

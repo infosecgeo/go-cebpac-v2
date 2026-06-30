@@ -7,6 +7,8 @@ import (
 	"cebupac/backend/logger"
 	"cebupac/backend/middleware"
 	"cebupac/backend/websocket"
+	"crypto/rand"
+	"math/big"
 	"net/http"
 	"time"
 
@@ -403,7 +405,13 @@ func randomString(n int) string {
 	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letters[time.Now().UnixNano()%int64(len(letters))]
+		idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
+		if err != nil {
+			// Fallback to less secure method if crypto fails
+			b[i] = letters[i%len(letters)]
+		} else {
+			b[i] = letters[idx.Int64()]
+		}
 	}
 	return string(b)
 }

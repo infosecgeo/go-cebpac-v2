@@ -244,6 +244,12 @@ func (l *Logger) GetRecentLogs(count int) []LogEntry {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
+	// Limit count to prevent excessive allocation
+	maxCount := 10000
+	if count > maxCount {
+		count = maxCount
+	}
+	
 	if count > len(l.entries) {
 		count = len(l.entries)
 	}

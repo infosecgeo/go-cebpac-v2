@@ -43,7 +43,7 @@ func main() {
 	passwordManager := auth.NewPasswordManager(cfg)
 	hashedPassword, err := passwordManager.HashPassword(ctx, "Change-Me-123!")
 	if err != nil {
-		fmt.Printf("❌ Failed to hash password: %v\n", err)
+		fmt.Printf("❌ Failed to hash password (check password requirements)\n")
 		os.Exit(1)
 	}
 

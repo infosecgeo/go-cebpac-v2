@@ -13,6 +13,7 @@ import (
 	"cebupac/backend/websocket"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // PaymentRequest represents a payment processing request
@@ -426,5 +427,5 @@ func getStatus(success bool) string {
 }
 
 func generateTransactionID() string {
-	return "txn_" + time.Now().Format("20060102150405") + "_" + randomString(8)
+	return "txn_" + uuid.New().String()
 }

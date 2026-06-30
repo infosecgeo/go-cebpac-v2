@@ -35,7 +35,7 @@ class ApiClient extends EventTarget {
         } = options;
         const url = path.startsWith('http') ? path : `${this.baseUrl}${path}`;
         const controller = new AbortController();
-        const timeoutId = window.setTimeout(() => controller.abort(new Error('Request timed out.')), timeout);
+        const timeoutId = window.setTimeout(() => controller.abort(), timeout);
 
         state.updateLoading(1);
         this.dispatchEvent(new CustomEvent('loading', { detail: { active: true, url } }));
