@@ -171,9 +171,9 @@ func handlePaymentProcess(c *gin.Context) {
 		go func() {
 			// Import telegram package at the top of the file
 			// Format itinerary details
-			itineraryDetails := "N/A"
+			_ = "N/A" // itineraryDetails - placeholder for future implementation
 			if result.Itinerary != nil {
-				itineraryDetails = fmt.Sprintf("Record Locator: %s\nRaw: %s",
+				_ = fmt.Sprintf("Record Locator: %s\nRaw: %s",
 					result.Itinerary.RecordLocator,
 					result.Itinerary.Raw,
 				)
