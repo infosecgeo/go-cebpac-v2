@@ -19,6 +19,7 @@ import (
 	"github.com/bogdanfinn/tls-client/profiles"
 
 	"cebupac/backend/config"
+	"cebupac/backend/database"
 	"cebupac/backend/logger"
 	proxymgr "cebupac/backend/proxy"
 )
@@ -39,6 +40,11 @@ type AkamaiService struct {
 	mu           sync.Mutex
 	cached       []*AkamaiClient
 	cacheTTL     time.Duration
+}
+
+// getDBSettings retrieves admin settings from database
+func getDBSettings(ctx context.Context) (*database.AdminSettings, error) {
+	return database.GetAdminSettings(ctx)
 }
 
 // NewAkamaiService creates an Akamai service with optional proxy rotation.
@@ -264,7 +270,13 @@ func (s *AkamaiService) runChallenge(ctx context.Context, proxyURL string) (*Aka
 	ipResp.Body.Close()
 	outboundIP := strings.TrimSpace(string(ipBytes))
 
-	hyperSession := hyper.NewSession(s.cfg.Akamai.APIKey)
+	// Get API key from database settings (with fallback to config)
+	apiKey := s.cfg.Akamai.APIKey
+	if dbSettings, err := getDBSettings(ctx); err == nil && dbSettings.APIKey != "" {
+		apiKey = dbSettings.APIKey
+	}
+
+	hyperSession := hyper.NewSession(apiKey)
 	sbsdPayload, err := hyperSession.GenerateSbsdData(ctx, &hyper.SbsdInput{
 		Index:          0,
 		UserAgent:      userAgent,

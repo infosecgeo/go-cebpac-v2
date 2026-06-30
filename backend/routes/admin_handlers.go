@@ -206,6 +206,9 @@ c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update settings
 return
 }
 
+// Invalidate settings cache so new values are loaded
+database.InvalidateSettingsCache()
+
 logger.GetLogger().Info("Admin settings updated", map[string]string{
 "admin_id": adminID,
 })
