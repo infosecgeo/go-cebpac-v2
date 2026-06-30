@@ -169,15 +169,15 @@ func handlePaymentProcess(c *gin.Context) {
 		
 		// Send Telegram notification for successful transaction
 		go func() {
-			// Import telegram package at the top of the file
-			// Format itinerary details
-			_ = "N/A" // itineraryDetails - placeholder for future implementation
-			if result.Itinerary != nil {
-				_ = fmt.Sprintf("Record Locator: %s\nRaw: %s",
-					result.Itinerary.RecordLocator,
-					result.Itinerary.Raw,
-				)
-			}
+			// TODO: Enable when Telegram bot integration is ready
+			// Format itinerary details for notification
+			// itineraryDetails := "N/A"
+			// if result.Itinerary != nil {
+			// 	itineraryDetails = fmt.Sprintf("Record Locator: %s\nRaw: %s",
+			// 		result.Itinerary.RecordLocator,
+			// 		result.Itinerary.Raw,
+			// 	)
+			// }
 			
 			// Try to send notification (non-blocking)
 			// bot, err := telegram.GetBot()
