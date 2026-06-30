@@ -155,6 +155,26 @@ Set the bot token and channel IDs in `.env` or via the admin dashboard settings 
 - **Top-ups**: View and filter top-up requests
 - **Settings**: Configure API keys, Telegram bot, QR codes
 
+#### Settings Configuration
+
+The **Settings** section allows you to configure critical system parameters:
+
+1. **API Configuration**
+   - **Proxy URL**: Configure proxy for CebuPacific API requests (format: `username:password@host:port`)
+   - **CebuPacific API Key**: Set the Hyper-SDK API key for Akamai bypass
+   - These settings override any values in `.env` file and are loaded from the database
+
+2. **Telegram Bot Configuration**
+   - **Bot Token**: Your Telegram bot token from @BotFather
+   - **Notification Channel ID**: Channel for transaction notifications
+   - **Approval Channel ID**: Channel for admin top-up approvals
+
+3. **Payment QR Code**
+   - Upload QR code image for user payment submissions
+   - Set custom payment instructions for users
+
+**Note**: After updating API settings, new values are immediately loaded for all subsequent requests.
+
 ## 👤 User Registration & Usage Flow
 
 ### Registration
