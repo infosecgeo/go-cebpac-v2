@@ -235,3 +235,40 @@ func (db *Database) StartBackupRoutine() {
 		}
 	}()
 }
+
+// Repository accessor methods
+func (db *Database) Users() (*Repository[User], error) {
+	return db.json.Users()
+}
+
+func (db *Database) Licenses() (*Repository[License], error) {
+	return db.json.Licenses()
+}
+
+func (db *Database) AdminSettings() (*Repository[AdminSettings], error) {
+	return db.json.AdminSettings()
+}
+
+func (db *Database) Proxies() (*Repository[ProxyRecord], error) {
+	return db.json.Proxies()
+}
+
+func (db *Database) TopupRequests() (*Repository[TopupRequest], error) {
+	return db.json.TopupRequests()
+}
+
+func (db *Database) Transactions() (*Repository[Transaction], error) {
+	return db.json.Transactions()
+}
+
+func (db *Database) Sessions() (*Repository[Session], error) {
+	return db.json.Sessions()
+}
+
+func (db *Database) Credits() (*Repository[Credit], error) {
+	return db.json.Credits()
+}
+
+func (db *Database) Logs() (*Repository[AuditLog], error) {
+	return db.json.Logs()
+}
